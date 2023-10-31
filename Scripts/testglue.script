@@ -1,0 +1,127 @@
+sizes = [2,0.5,0.3]
+table_position_glue = p[-0.2884,-0.5849,0.1881,0.1485,-3.045,-0.1380]
+
+#Create the four waypoints
+
+
+corner_1A = pose_add(table_position_glue, p[sizes[1],0,0,0,0,0])        #These must be the coordinates of the second corner
+corner_2A = pose_add(corner_1A, p[0, -sizes[2],0,0,0,0])            #These must be the coordinates of the third corner
+corner_3A = pose_add(corner_2A, p[-sizes[1],0,0,0,0,0])            #These must be the coordinates of the fourth corner
+corner_4A = pose_add(corner_3A, p[0,sizes[2],0,0,0,0])            #These must be the coordinates of the initial corner
+
+#Move to the 4 waypoints while gluing (the corners must not be glued)
+
+
+thread move_thread1():
+    movel(corner_1A)
+end
+
+thread move_thread2():
+    movel(corner_2A)
+end
+
+thread move_thread3():
+    movel(corner_3A)
+end
+
+thread move_thread4():
+    movel(corner_4A)
+end
+
+def glue():
+    set_digital_out(0, True)
+end
+
+def stop_glue():
+    set_digital_out(0, False)
+end
+
+
+if length(sizes) == 3:   
+
+
+  movej(table_position_glue)
+
+  run move_thread1()
+  sleep(0.3)
+  glue()
+  sleep(1)  
+  stop_glue()
+
+  run move_thread2()
+  glue()
+  sleep(3)
+  stop_glue()
+
+
+  run move_thread3()
+  glue()
+  stop_glue()
+
+  run move_thread4()
+  glue()
+  stop_glue()
+
+halt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sizes = [2,0.5,0.3]
+table_position_glue = p[-0.2884,-0.5849,0.1881,0.1485,-3.045,-0.1380]
+
+#Create the four waypoints
+
+
+corner_1A = pose_add(table_position_glue, p[sizes[1],0,0,0,0,0])        #These must be the coordinates of the second corner
+corner_2A = pose_add(corner_1A, p[0, -sizes[2],0,0,0,0])            #These must be the coordinates of the third corner
+corner_3A = pose_add(corner_2A, p[-sizes[1],0,0,0,0,0])            #These must be the coordinates of the fourth corner
+corner_4A = pose_add(corner_3A, p[0,sizes[2],0,0,0,0])            #These must be the coordinates of the initial corner
+
+#Move to the 4 waypoints while gluing (the corners must not be glued)
+
+
+thread move_thread():
+    movel(corner_1A)
+    movel(corner_2A)
+    movel(corner_3A)
+    movel(corner_4A)
+end
+
+
+def glue():
+    set_digital_out(0, True)
+end
+
+def stop_glue():
+    set_digital_out(0, False)
+end
+
+
+if length(sizes) == 3:   
+
+
+    movej(table_position_glue)
+    run move_thread()
+    glue()
+    stop_glue() 
+    textmsg("END")      
+    
+end
+
+halt
+

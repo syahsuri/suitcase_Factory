@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <h1>WebSocket Client</h1>
+
+    <!-- WebSocket Connection -->
+    <button id="connectButton" onclick="connect_to_server()">Connect to Server</button>
+    <div id="connectionStatus">Not Connected</div>
+
+    <!-- Send Message -->
+    <input type="text" id="messageInput" placeholder="Type a message">
+    <button id="sendButton" onclick='send_command("TEST")'>Send Message</button>
+
+    <!-- Received Messages -->
+    <div id="receivedMessages">
+        <h2>Received Messages:</h2>
+        <ul id="messageList"></ul>
+    </div>
+
+    <script src="web_client.js"></script>
+</body>
+
+<h1>JavaScript Progress Bar</h1>
+
+<div id="myProgress">
+  <div id="myBar"></div>
+</div>
+
+<style>
+    #myProgress {
+      width: 100%;
+      background-color: #ddd;
+    }
+    
+    #myBar {
+      width: 1%;
+      height: 30px;
+      background-color: #04AA6D;
+    }
+    </style>
+
+<br>
+<button onclick="move()">Click Me</button> 
+
+<script>
+var i = 0;
+function move() {
+  if (i == 0) {
+    i = 1;
+    var elem = document.getElementById("myBar");
+    var width = 1;
+    var id = setInterval(frame, 10);
+    function frame() {
+      if (width >= 100) {
+        clearInterval(id);
+        i = 0;
+      } else {
+        width++;
+        elem.style.width = width + "%";
+      }
+    }
+  }
+}
+</script>
+</html>
+

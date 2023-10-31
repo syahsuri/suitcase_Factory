@@ -1,0 +1,71 @@
+# Continues glue line
+def get_pose():
+    return get_actual_tcp_pose()
+  end
+  
+  def start_glueing():
+    set_digital_out(2, True)
+  end
+  
+  def stop_glueing():
+    set_digital_out(2, False)
+  end
+  
+  def draw_line(length, direction, delay = 0, not_length = 0):
+    global plane = 0
+    global stop_point = get_pose()
+    if(direction == "front"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,-length,0,0,0,0])
+    elif(direction == "back"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,length,0,0,0,0])
+    elif(direction == "left"):
+      stop_point = pose_add(get_pose(), p[length,0,0,0,0,0])
+    elif(direction == "right"):
+      stop_point = pose_add(get_pose(), p[-length,0,0,0,0,0])
+    end
+    global goal = stop_point[plane]
+  
+    def abs(value):
+      if(value < 0):
+        return value * -1
+      end
+      return value
+    end
+  
+    def get_delta_pose():
+      pose = get_pose()
+      return (pose[plane])
+    end
+  
+    def is_near_not_length(not_length):
+      current = get_delta_pose()
+      delta = abs(current - goal)
+      if(delta <= (not_length)):
+        return True
+      end
+      return False
+    end
+  
+    thread move_thread():
+      movel(stop_point)
+    end
+  
+    start_glueing()
+    sleep(delay)
+    thrd = run move_thread()
+    while (True and not not_length == 0):
+      if is_near_not_length(not_length):
+        break
+      end
+      sleep(0.01)
+    end
+    stop_glueing()
+    join thrd
+  end
+  
+  #length - 0.010 SOULD BE 0.456 
+  draw_line(length = 0.460, direction = "left", delay = 0.60, not_length = 0.05)
+  draw_line(length = 0.3, direction = "left", delay = 1, not_length = 0.05)
+  halt

@@ -1,0 +1,45 @@
+
+#1. Employee selects amounts on interface (use default values for now)(amount[])
+
+    
+# Open a socket for receiving data (we have to configurate the parameters from it)
+port = 10000
+ip = "192.168.0.5"
+name_socket = "server"
+#hellooooo
+
+### Connect to camera and return status ###
+socket = socket_open(ip, port, name_socket) 
+textmsg("Connection: ", socket)
+
+#2. Employee selects amounts on interface (use default values for now)(amount[])
+
+while True:
+    textmsg("Waiting for receiving information from the interface...")
+    data = socket_read_ascii_float(3,name_socket)  # This waits for 10 seconds
+    textmsg(data)
+    if length(data) == 4:
+        break
+    end
+    sleep(1)
+end
+
+#3. Employee pushes start button on interface (This starts the routine)
+
+# Wait until we receive start ("start") from socket
+while True:
+    textmsg("Waiting for the signal start...")
+    start_signal = socket_read_string(name_socket)
+    textmsg(start_signal)
+    
+    if start_signal == "2.start":
+        break
+    end
+    sleep(1) 
+end
+
+#socket_send_string("3.No more frames to glue", name_socket)
+socket_close(name_socket)
+textmsg("END")
+
+halt

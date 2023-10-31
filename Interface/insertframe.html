@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just In Case</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet" />
+  
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+</head>
+<body>
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="col-md-6">
+          <div class="card text-center" style="padding: 20px;">
+            <div class="d-flex justify-content-between">
+              <input style="display: none;" id="checkbox" type="checkbox" data-toggle="toggle" data-size="large" data-style="ios" data-width="100" checked onchange="toggleFrameInput(this)" />
+
+              <button id="backButton" class="btn btn-primary" onclick="goBack()">Back</button>
+          </div>    
+            <div id="frameInput" style="margin-top: 20px; display: block;">
+              <button type="button" style="width: 200px; height: 50px;"  class="btn btn-danger mb-3" onclick="stopFrames()"> Emergency stop</button>
+                <div class="row">
+                  <div class="col-md-4">
+                    <label for="frameA" style="background: linear-gradient(to bottom, #9ed2ff, #00aeff); padding: 10px; border: 2px solid;border-radius: 10px;width: 130px; ">
+                      <img src="A.png" alt="Frame A Image" style="max-width: 110px; max-height: 110px; margin-right: 10px; border-radius: 10px;">
+                  </label>                  
+                    <div class="d-flex align-items-center">
+                      <input type="number" id="frameA" class="form-control" placeholder="Enter quantity" oninput="validateNonNegativeInput('frameA')" />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="frameB" style="background: linear-gradient(to bottom, #ffac99, #ff0000); padding: 10px;   border: 2px solid; border-radius: 10px; ">
+                      <img src="B.png" alt="Frame A Image" style="max-width: 100px; height: 110px; margin-right: 10px; border-radius: 10px;"></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" id="frameB" class="form-control" placeholder="Enter quantity" oninput="validateNonNegativeInput('frameB')" />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="frameC" style="background: linear-gradient(to bottom, #ffea81, #ffff00); padding: 10px;border: 2px solid; border-radius: 10px; "><img src="C.png" alt="Frame A Image" style="max-width: 100px; height: 110px; margin-right: 10px; border-radius: 10px;"></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" id="frameC" class="form-control" placeholder="Enter quantity" oninput="validateNonNegativeInput('frameC')" />
+                    </div>
+                  </div>
+                </div>
+                <div id="frameOptions">
+                  <div class="form-check form-check-inline option-container">
+                    <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="[1]AAA">
+                    <label class="form-check-label" for="inlineRadio1"><b>AABBCC</b></label>
+                </div>
+                <div class="form-check form-check-inline option-container">
+                    <input class="form-check-input" type= "radio" name="inlineRadioOptions" id="inlineRadio2" value="[1]ABC">
+                    <label class="form-check-label" for="inlineRadio2"><b>ABCABC</b></label>
+                </div>
+                <button id="startBtn" type="button" class="btn btn-success btn-submit col-lg-12 mt-2" onclick="submitFrames()">Start</button>
+              </div>
+              </div>
+                          
+            <!-- Frame Information and Buttons -->
+            <div id="infoDisplay" class="mt-2"></div>
+            <div id="buttonsDisplay"></div>
+              <div class="card-group" id="buttonContainer" style="margin-top: 10px; display: none; justify-content: center;">
+                <div>
+                    <button   class="btn btn-secondary mr-2" onclick="pause()"><i class="fa-solid fa-pause"></i></button>
+                    <button class="btn btn-primary mr-2" onclick="play()"><i class="fa-solid fa-play"></i></button>
+                    <button class="btn btn-danger mr-2" onclick="stop()"><i class="fa-solid fa-stop"></i></button></br>
+                    <button class="btn btn-danger mr-2 mt-2" onclick="stopGlueing()">Stop Glueing</button>
+                </div>
+              </div>
+            <progress id="messageProgressBar" value="0" max="15" style="width: 100%; height: 50px;"></progress>
+
+            <textarea class="mt-2" id="messageTextArea" cols="50" rows="10"></textarea>
+          
+            <div class="card-footer" style="margin-top: 10px; display: none; justify-content: space-between;">
+                <div class="text-primary" id="statusRobot"> </div>
+            </div>
+              
+          </div>
+          <div class="col-md-10 mt-2">
+            <div class="card alert-info" style="background-color: rgb(255, 255, 255); width: 600px; height: 100px; margin-left: -15px; display: flex;">
+              <div class="card-footer" style="margin-top: 10px; display: flex; justify-content: space-between; width: 100%;">
+                <div class="text-primary" id="programState">Not Connected</div>
+                <div class="text-primary" id="Robotmode">Not Connected</div>
+                <div class="text-primary" id="Safetystatus">Not Connected</div>
+              </div> 
+            
+            </div>      
+          </div>      
+        </div>
+        
+        
+        </div>        
+        </div>
+        
+      </div>
+
+     
+      <script src="script.js"></script>
+      <script>
+        
+      </script>
+      <!-- Add SweetAlert script -->
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+      <script src="https://kit.fontawesome.com/0735ededae.js" crossorigin="anonymous"></script>
+
+
+</body>
+</html>

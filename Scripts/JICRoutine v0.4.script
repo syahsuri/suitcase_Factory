@@ -1,0 +1,809 @@
+# Main script
+# v0.4
+#TRYING
+
+
+#Here are all the position declarations
+
+startpoint = p[-0.1255,-0.2601,0.4638,0.0870,2.168,2.0844]                             #Starting Position
+
+pickup_point_A = p[-0.7438,-0.5745,0.4120,-0.0778,-2.218,-2.2148]                          #Position of box number 1
+position_B = p[-1.0366,0.0562,0.1863,1.5051,0.586,0.6282]                           #Position of the frame B pick up and drop off zone
+
+
+table_position = p[-0.1947,-0.4256,0.1669,1.2009,-1.252,-1.1898]                     #Position of the table
+way = p[-0.1412,-0.5835,0.4621,1.1940,-1.277,-1.1771]                                 #This position is a fixed waypoint position for going to the table
+
+camera_position = p[0.8622,-0.0343,0.6318,-0.0681,-2.113,-2.1791]                         #Position of out of view for camera
+table_position_glue = p[-0.3706,-0.3470,0.1909,2.2020,2.225,-0.0089]
+
+safe_point_pickup =p[-1.0019,0.1517,0.4805,0.1415,2.202,2.1278]                      #(Safe)position of the pickup
+safe_point_dropoff =p[0.6533,-0.1408,0.5747,1.2745,-1.216,-1.0799]                  #(Safe)position of the dropoff
+
+rotation_glue = p[0.8506,-0.1328,0.6038,2.1920,-2.198,0.0366]
+rotation_glue_pickup=  p[-0.8541,0.1059,0.6045,-2.1704,-2.234,-0.0581]
+
+dropoff_positionA = p[0.7657,-0.7014,0.4515,1.5731,-0.014,0.0026]                     #Position of the drop off zone
+position_C = p[0.9853,-0.0111,0.1838,0.6696,-1.864,-1.8707]                             #Position of the frame C pick up and drop off zone
+
+
+recharge_pos = p[0.1671,0.7424,0.2700,-1.5766,1.590,0.9103]
+
+
+
+
+
+
+
+def get_pose():
+  return get_actual_tcp_pose()
+end
+
+thread stop_botton():
+    
+    while True:
+        stop = socket_read_string()
+        if stop == "stop":
+            send_command("0.End program")            
+            halt 
+        end
+    end
+
+end
+
+
+name_socket = "server"
+server_socket = False
+
+# Returns True or False whether the connection has been made (attempts = 0 for not limit)
+def connect_to_server(attempts = 0):
+  if(is_connected_to_server()):
+    return True
+  end
+
+  id = "2"
+  port = 10000
+  ip = "192.168.0.5"
+  #Hello
+  
+  attempt = 0
+  
+  textmsg("Attempting to connect...")
+  while attempt < attempts or attempts == 0:
+      if server_socket:
+          send_command(id)
+          textmsg("Connected to server")
+          return True
+      end
+      server_socket = socket_open(ip, port, name_socket) 
+      attempt = attempt + 1
+      sleep(1)
+  end
+  return False
+end
+
+# Returns True or False wether its connected to the server
+def is_connected_to_server():
+  return server_socket
+end
+
+# Wait for command
+# Returns False if not receiving command after timeout (timeout = 0 for no limit)
+def wait_for_command_OLD(timeout = 0):
+  return socket_read_string(name_socket, prefix ="",suffix ="", interpret_escape=False, timeout=timeout)
+end
+
+def wait_for_command(timeout = 0):
+    while True:
+        data = socket_read_string(name_socket, prefix ="",suffix ="", interpret_escape=False, timeout=timeout)
+        if length(data) > 0:
+            return data
+        end
+    end
+end
+
+def wait_for_commandDATA(number, timeout = 0):
+    while True:
+        data = socket_read_ascii_float(number, name_socket)
+        if not data[0] == 0:
+            return data
+        end
+    end
+end
+
+
+# Send command to server
+# Returns True or False whether it sent the command. Retry = true will continue trying.
+def send_command(command, retry = False):
+  if not (socket_send_string(command, name_socket)):
+    if retry:
+      sleep(1)
+      return send_command(command, retry)
+    end
+    return False
+  else:
+    return True
+  end
+end
+
+
+def SocketConnection():
+
+    connect_to_server()
+
+
+    #2. Employee selects amounts on interface (use default values for now)(amount[])
+
+    textmsg("Waiting for the amount...")
+
+    amount = wait_for_commandDATA(3)             #Compulsory to receive the data with parentesis and separated with comas
+    textmsg(amount)
+    if length(amount) == 4:
+        textmsg("OK")
+    end
+    
+
+    #3. Employee pushes start button on interface (This starts the routine)
+
+    # Wait until we receive start ("start") from socket
+    start_signal = wait_for_command()
+    textmsg(start_signal)
+    while True:
+      if start_signal == "start":
+        send_command("3.Connected")
+        textmsg("OK")
+        break
+      elif start_signal == "recharge":
+        send_command("3.Connected, recharge glue")
+        movej(safe_point_dropoff)
+        movej(recharge_pos)
+        halt         
+      end
+    end
+
+    return amount
+end
+
+def moveToRest():
+  # Move to Resting Position
+  movej(startpoint)
+end
+
+def get_joints():
+    return get_actual_joint_positions()
+  end
+
+def rotate_tool(angle):
+  joint = get_joints()
+  pos = [joint[0], joint[1], joint[2], joint[3], joint[4] + d2r(angle), joint[5]]
+  movej(pos)
+end
+
+def open_gripper():
+    set_digital_out(0, False)
+end
+
+def close_gripper():
+    set_digital_out(0, True)
+end
+
+def glue():
+    #set_digital_out(2, True)
+end
+
+def stop_glue():
+    #set_digital_out(2, False)
+end
+
+def open_pistons():
+    set_digital_out(1, False)
+end
+
+def close_pistons():
+    set_digital_out(1, True)
+end
+
+
+
+def moveToPickUpZone(zone):
+
+    #Move to Resting Position
+    if (zone == 1):
+
+
+        movej(safe_point_pickup)                                             #First moving into a safe position
+
+        #Move to PickUp Zone A
+
+        frame_boxA = p[-0.7438,-0.5745,0.5120,-0.0778,-2.218,-2.2148]        #Later going 1 cm above the frame boc location
+        movel(frame_boxA)
+        
+        #WE HAVE TO STILL FIGURE OUT HOW TO PUT THE INITIAL PICK_UP_POINT_A DEPENDING ON HOW MANY FRAMES ARE
+        #pickup_point_A = pose_add(pickup_point_A, p[0,0,-(10-frames)*0.2,0,0,0])       #USE SOMETHING LIKE THIS?
+        sleep(1)
+        movel(pickup_point_A, a=1.0, v=0.25)                                  #Position of frame in box number 1
+        close_gripper()
+        sleep(1)                                                              #Sleep necesary for gripping good
+
+        movel(frame_boxA)                                                     #Move up again
+        pickup_point_A = pose_add(pickup_point_A, p[0,0,-0.2,0,0,0])          #Increase the position of the pick up for the next frame
+
+    elif (zone == 2):
+
+        movej(safe_point_pickup)      
+
+
+        # Move to PickUp Zone B
+        frame_boxB = p[-1.0366,0.0562,0.2863,1.5051,0.586,0.6282]                   #Position of frame in box number 1
+        movel(frame_boxB)
+
+        sleep(1)       
+        movel(position_B, a=1.0, v=0.25)
+        close_gripper()
+        sleep(1)
+
+        movel(frame_boxB)
+
+    elif (zone == 3):
+
+        movej(safe_point_dropoff)        
+
+        # Move to PickUp Zone C
+        frame_boxC = p[0.9853,-0.0111,0.2838,0.6696,-1.864,-1.8707]                   #Position of frame in box number 1
+        movel(frame_boxC)
+
+        sleep(1)        
+        movel(position_C, a=1.0, v=0.25)
+        close_gripper()
+        sleep(1)
+
+        movel(frame_boxC)
+    end
+end
+
+
+def moveToGlueZone(zone):
+
+  
+
+    if zone == 1 :
+        movej(safe_point_pickup)        
+        
+        waypoint_A = pose_add(safe_point_pickup, p[0.35,0,0,0,0,0])         #Position for moving with the frame without touching anything
+        movel(waypoint_A)
+
+        movej(way)        
+
+        waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])             #First moving a bit higher of the table for safe
+        movel(waypoint_A)
+
+        movel(table_position)
+        sleep(1)
+        open_gripper()
+
+    elif zone == 2 :
+
+        movej(safe_point_pickup)
+
+        waypoint_A = pose_add(safe_point_pickup, p[0.35,0,0,0,0,0])
+        movel(waypoint_A)
+        
+        movej(way)
+
+        waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])
+        movel(waypoint_A)
+        
+        movel(table_position)
+        sleep(1)
+        open_gripper()
+
+    elif zone == 3:
+        
+        movej(safe_point_dropoff)
+
+        waypoint_A = pose_add(safe_point_dropoff, p[-0.35,0,0,0,0,0])
+        movel(waypoint_A)
+        
+        movej(way)
+
+        waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])
+        movel(waypoint_A)
+
+        movel(table_position)
+        sleep(1) 
+        open_gripper()
+
+    end     
+end
+
+
+def PickUp(zone):
+
+    if(zone == 1):
+        movej(table_position_glue)
+        movej(rotation_glue)
+        movej(safe_point_dropoff)
+    elif(zone == 2):
+        #Hello
+        movej(table_position_glue)
+        movej(rotation_glue_pickup)
+        movej(safe_point_pickup)                                          #This whole process is for rotating the arm to glue position      
+    elif(zone == 3):
+        movej(table_position_glue)
+        movej(rotation_glue)
+        movej(safe_point_dropoff)
+    end
+
+    open_gripper()                                              #Make sure its open
+
+    movej(way)                                                  #First move to a safe waypoint
+
+    waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])             #Later moving a bit higher of the table for safe
+    movel(waypoint_A)
+
+    movel(table_position)                                          #Go to pick up position
+    sleep(1)
+    
+    #Pick up the frame
+    close_gripper()
+    sleep(1)
+end
+
+def moveToDropZone(zone):
+  # Move to Resting Position
+    if zone == 1:
+
+      waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])             #Later moving a bit higher of the table for safe
+      movel(waypoint_A)
+
+      #Move to DropOff Zone A
+      movej(way)                                                        #First go to a safe waypoint
+
+      waypoint = pose_add(way, p[0,-0.2,0,0,0,0])                        #This movement for not crashing with the frame
+      movel(waypoint)
+
+      movej(safe_point_dropoff)                                         #Move into the safe point of the dropoff
+      sleep(1)
+
+      waypoint_DA = pose_add(dropoff_positionA, p[0,0,0.3,0,0,0])         #Position of frame in box number 1
+      movej(waypoint_DA) 
+      movel(dropoff_positionA)                                              #Go to drop off position A 
+      
+      #Drop off the frame
+      open_gripper()
+  
+      movel(waypoint_DA)                                                      #Do the same safe movements as before
+      movej(safe_point_dropoff) 
+      movej(startpoint)      
+      
+
+    elif zone == 2:
+      #Move to DropOff Zone B
+
+      waypoint_B = pose_add(table_position, p[0,0,0.2,0,0,0])             #Later moving a bit higher of the table for safe
+      movel(waypoint_B)
+
+      movej(way)  
+
+      waypoint = pose_add(way, p[0,-0.2,0,0,0,0])
+      movel(waypoint)
+
+      movej(safe_point_pickup)
+      sleep(1)
+
+      waypoint_DB = pose_add(position_B, p[0,0,0.3,0,0,0])                #Position of frame in box number 2
+      movej(waypoint_DB)
+      movel(position_B)                                                     #Go to drop off position B
+
+      
+      #Drop off the frame
+      open_gripper()
+
+      movel(waypoint_DB)
+      movel(safe_point_pickup) 
+      movej(startpoint)
+
+      position_B = pose_add(position_B, p[0,-0.2,0,0,0,0])                     #Increase the position of the pick up for the next frame
+
+    elif zone == 3:
+
+      waypoint_A = pose_add(table_position, p[0,0,0.2,0,0,0])             #Later moving a bit higher of the table for safe
+      movel(waypoint_A)
+      
+      #Move to DropOff Zone C 
+      movej(way) 
+
+      waypoint = pose_add(way, p[0,-0.2,0,0,0,0])
+      movel(waypoint) 
+
+      movej(safe_point_dropoff)
+      sleep(1)
+      
+      waypoint_DC = pose_add(position_C, p[0,0,0.3,0,0,0])                #Position of frame in box number 3
+      movel(waypoint_DC)
+
+      movel(position_C)                                                     #Go to drop off position C
+
+      
+      #Drop off the frame
+      open_gripper()
+      movej(safe_point_dropoff) 
+      movej(startpoint)
+      position_C = pose_add(position_C, p[0,-0.2,0,0,0,0])                     #Increase the position of the pick up for the next frame
+    
+    end
+end
+
+def draw_line(length, direction, delay = 0, not_length = 0):
+  global plane = 0
+  global stop_point = get_pose()
+  if(direction == "front"):
+    plane = 1
+    stop_point = pose_add(get_pose(), p[0,-length,0,0,0,0])
+  elif(direction == "back"):
+    plane = 1
+    stop_point = pose_add(get_pose(), p[0,length,0,0,0,0])
+  elif(direction == "left"):
+    stop_point = pose_add(get_pose(), p[length,0,0,0,0,0])
+  elif(direction == "right"):
+    stop_point = pose_add(get_pose(), p[-length,0,0,0,0,0])
+  end
+  global goal = stop_point[plane]
+
+  def abs(value):
+    if(value < 0):
+      return value * -1
+    end
+    return value
+  end
+
+  def get_delta_pose():
+    pose = get_pose()
+    return (pose[plane])
+  end
+
+  def is_near_not_length(not_length):
+    current = get_delta_pose()
+    delta = abs(current - goal)
+    if(delta <= (not_length)):
+      return True
+    end
+    return False
+  end
+
+  thread move_thread():
+    movel(stop_point)
+  end
+  
+  glue()
+  sleep(delay)
+  thrd = run move_thread()
+  while (True and not not_length == 0):
+    if is_near_not_length(not_length):
+      break
+    end
+    sleep(0.01)
+  end
+  stop_glue()
+  join thrd
+end
+
+def glue_frameA():
+   
+   #GLUING PART OF FRAME A
+
+   #8. Move out of frame (Away for the camera for it to scan properly)
+
+   movej(startpoint)
+   movej(camera_position)
+  
+   movej(rotation_glue)
+
+   #Send a signal to the vision part to start scanning
+   #send_command("2:scan")                                    #FOR TESTING NOW NO BUT WHEN VISION PART INTEGRATED WE HAVE TO SEND IT
+
+
+   #8b. Glue
+   #First we have to locate and receive the height and length form the vision part, Open CV (named size[])
+
+    #sizes = wait_for_commandDATA(2)                          #FOR TESTING NOW NO BUT WHEN VISION PART INTEGRATED WE HAVE TO SEND IT
+        
+    sizes = [2,0.3,0.5]                                       #USE FOR NOW FIXED VALUES
+    
+    if length(sizes) == 3:   
+
+        close_pistons()
+
+        movej(table_position_glue)
+        draw_line(length = sizes[1], direction = "left", delay = 0.6, not_length = 0.05)
+
+        up_pos = pose_add(get_actual_tcp_pose(), p[0,0,0.05,0,0,0])
+        movel(up_pos)
+        new_pos = pose_add(get_actual_tcp_pose(), p[0.025,-0.025,0,0,0,0])
+        movel(new_pos)
+        down_pos = pose_add(get_actual_tcp_pose(), p[0,0,-0.05,0,0,0])
+        movel(down_pos)
+
+        draw_line(length = sizes[1], direction = "front",  delay = 0.6 , not_length = 0.05)
+
+        up_pos = pose_add(get_actual_tcp_pose(), p[0,0,0.05,0,0,0])
+        movel(up_pos)
+        new_pos = pose_add(get_actual_tcp_pose(), p[-0.025,-0.025,0,0,0,0])
+        movel(new_pos)
+        down_pos = pose_add(get_actual_tcp_pose(), p[0,0,-0.05,0,0,0])
+        movel(down_pos)
+
+        draw_line(length = sizes[1], direction = "right",  delay = 0.6 , not_length = 0.05)
+
+        up_pos = pose_add(get_actual_tcp_pose(), p[0,0,0.05,0,0,0])
+        movel(up_pos)
+        new_pos = pose_add(get_actual_tcp_pose(), p[-0.025,0.025,0,0,0,0])
+        movel(new_pos)
+        down_pos = pose_add(get_actual_tcp_pose(), p[0,0,-0.05,0,0,0])
+        movel(down_pos)
+
+        draw_line(length = sizes[1], direction = "back",  delay = 0.6 ,not_length = 0.05)
+
+
+        open_pistons()
+
+    else:
+        textmsg("Error receiving coordinates.")
+    end
+end
+
+
+
+
+def glue_frameB():
+   #GLUING PART OF FRAME B
+
+
+   #8. Move out of frame (Away for the camera for it to scan properly)
+    movej(startpoint)
+    movej(camera_position)
+    
+    movej(rotation_glue)
+
+   #Send a signal to the vision part to start scanning
+   #send_command("2:scan") 
+
+
+   #8b. Glue
+   #First we have to locate and receive the height and length form the vision part, Open CV (named size[])
+
+    #sizes = wait_for_commandDATA(2)
+
+    sizes = [2,0.3,0.5]
+    if length(sizes) == 3:
+
+        close_pistons()
+        #First move to the starting gluing point and create the three waypoints
+
+        movej(table_position_glue)
+
+        draw_line(length = sizes[1], direction = "left", delay = 0.6, not_length = 0.05)
+
+        up_pos = pose_add(get_actual_tcp_pose(), p[0,0,0.05,0,0,0])
+        movel(up_pos)
+
+        #Rotate the end of arm
+        waypoint_armB = pose_add(up_pos, p[0,0,0,0,0,0])                   #Rotate to the posicion needed (always the same)
+        movej(waypoint_armB)                                                #WE HAVE TO FIX WHICH POSITION IS
+
+
+        draw_line(length = sizes[1], direction = "right", delay = 0.6, not_length = 0.05)
+
+        new_pos = pose_add(get_actual_tcp_pose(), p[-0.025,-0.025,0,0,0,0])
+        movel(new_pos)
+         
+        draw_line(length = sizes[1], direction = "front", delay = 0.6, not_length = 0.05)
+
+        up_pos = pose_add(get_actual_tcp_pose(), p[0.05,0,0,0,0,0])
+        movel(up_pos)
+
+        #Rotate the end of arm
+        waypoint_armB = pose_add(up_pos, p[0,0,0,0,0,0])                   #Rotate to the posicion needed (always the same)
+        movej(waypoint_armB)                                                #WE HAVE TO FIX WHICH POSITION IS
+
+        draw_line(length = sizes[1], direction = "back", delay = 0.6, not_length = 0.05)        
+    
+
+        open_pistons()
+   
+    else:
+        textmsg("Error receiving coordinates.")
+    end
+end
+   
+
+
+
+
+
+def glue_frameC():
+   #GLUING PART OF FRAME C
+
+    #8. Move out of frame (Away for the camera for it to scan properly)
+    movej(startpoint)
+    movej(camera_position)
+   
+    movej(rotation_glue)
+
+    #Send a signal to the vision part to start scanning
+    #send_command("2:scan")
+
+
+    #8b. Glue
+    #First we have to locate and receive the height and length form the vision part, Open CV (named size[])
+    
+    #sizes = wait_for_commandDATA(2)
+    sizes = [2,0.3,0.5]
+    if length(sizes) == 3:  
+
+        close_pistons()
+    
+        movej(table_position_glue)
+
+        
+        #Rotate the end of arm
+        waypoint_armC = pose_add(table_position_glue, p[0,0,0,0,0,0])            #Rotate to the posicion needed (always the same)
+        movej(waypoint_armC)                                                      #WE HAVE TO FIX WHICH POSITION IS
+
+        draw_line(length = sizes[1], direction = "left", delay = 0.6, not_length = 0.05)
+
+        new_pos = pose_add(waypoint_armC, p[-0.025,-0.025,0,0,0,0])                                               
+        movej(new_pos)
+
+        draw_line(length = sizes[1], direction = "front", delay = 0.6, not_length = 0.05)
+
+        new_pos = pose_add(get_actual_tcp_pose(), p[0.05,0,0,0,0,0])
+        movel(new_pos)
+
+        new_pos = pose_add(get_actual_tcp_pose(), p[0,0,0.2,0,0,0])
+        movel(new_pos)        
+
+        open_pistons()
+
+
+    else:
+        textmsg("Error receiving coordinates.") 
+    end
+
+end
+
+
+
+def process(amount):
+
+  #4. Robot moves to pickup zone (A, B, and C)
+    
+    if (amount[1]) != 0 :
+        i= 0
+
+        
+        while i < (amount[1]):
+
+           open_gripper() # Make sure its open
+
+            moveToPickUpZone(1)
+            
+            #5. Pick up frame (from first fixed point, then move with a loop to the next x amount)
+            
+            #6. Move to working zone (The glueing area)
+            moveToGlueZone(1)
+            
+            #7.a Drop the frame in the right position (where the piston will hold it down, dont let go yet)
+                        
+
+            #Go to function which does the glue part of the frame A
+            glue_frameA()
+
+            #Pick up from the table
+            PickUp(1)
+
+            #10. Move the frame to the drop-off zone
+            moveToDropZone(1)
+
+            send_command(to_str(i))
+            i = i+1
+        end
+        pickup_point_A = p[-0.9223,-0.4447,0.4517,1.1524,1.534,1.3698]              #After doing the whole while restart the initial position of the pick of frames B
+    end        
+
+
+   
+    if (amount[2]) != 0 :
+
+        j= 0
+        
+        while j < (amount[2]):
+
+            open_gripper() # Make sure its open
+
+            moveToPickUpZone(2)
+            
+            #5. Pick up frame (from first fixed point, then move with a loop to the next x amount)
+            
+            #6. Move to working zone (The glueing area)
+            moveToGlueZone(2)
+            
+            #7.Drop the frame in the right position (where the piston will hold it down, dont let go yet)
+                        
+           
+            #Go to function which does the glue part of the frame A
+            glue_frameB()
+
+            #Pick up from the table
+            PickUp(2)
+
+            #10. Move the frame to the drop-off zone
+            moveToDropZone(2)
+            
+            send_command(to_str(i+j))
+            j = j+1
+        end
+        position_B = p[-1.0366,0.0562,0.1863,1.5051,0.586,0.6282]                #After doing the whole while restart the initial position of the pick of frames B
+    end    
+
+    
+    if (amount[3]) != 0 :
+
+        d= 0
+        
+        while d < (amount[3]):
+
+            open_gripper() # Make sure its open
+
+            moveToPickUpZone(3)
+            
+            #5. Pick up frame (from first fixed point, then move with a loop to the next x amount)            
+
+            #6. Move to working zone (The glueing area)
+            moveToGlueZone(3)
+            
+            #7.Drop the frame in the right position (where the piston will hold it down, dont let go yet)           
+           
+
+            #Go to function which does the glue part of the frame A
+            glue_frameC()
+
+            #Pick up from the table
+            PickUp(3)
+
+            #10. Move the frame to the drop-off zone
+            moveToDropZone(3)
+            
+            send_command(to_str(d+i+j))
+            d = d+1
+        end
+        position_C = p[0.9853,-0.0111,0.1838,0.6696,-1.864,-1.8707]                  #After doing the whole while restart the initial position of the pick of frames C
+    end        
+
+end
+
+
+#----------------------------------MAIN PROGRAM--------------------------------------------
+
+#1. Move the robot to a startposition (Backwards)
+moveToRest()
+
+
+#2. Employee selects amounts on interface (use default values for now)(amount[])
+
+
+#amount = SocketConnection()
+amount = [3,1,1,1]                  #THIS IS ONLY FOR TESTING FOR NOW
+process(amount)
+moveToRest()
+
+textmsg("No more frames to glue")  #Maybe send it through the interface
+#send_command("No more frames to glue")
+#socket_close(name_socket)                      #THIS WE HAVE TO DO WHEN SOCKET AVAILABLE
+
+
+halt
+
+
+
+

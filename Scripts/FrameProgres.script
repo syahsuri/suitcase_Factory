@@ -1,0 +1,75 @@
+name_socket = "server"
+server_socket = False
+
+#hehe
+
+# Connect to server
+# Returns True or False whether the connection has been made (attempts = 0 for not limit)
+def connect_to_server(attempts = 0):
+  if(is_connected_to_server()):
+    return True
+  end
+
+  id = "2"
+  port = 10000
+  ip = "192.168.0.5"
+  attempt = 0
+  
+  textmsg("Attempting to connect...")
+  while attempt < attempts or attempts == 0:
+      if server_socket:
+          send_command(id)
+          textmsg("Connected to server")
+          return True
+      end
+      server_socket = socket_open(ip, port, name_socket) 
+      attempt = attempt + 1
+      sleep(1)
+  end
+  return False
+end
+
+# Returns True or False wether its connected to the server
+def is_connected_to_server():
+  return server_socket
+end
+
+# Wait for command
+# Returns False if not receiving command after timeout (timeout = 0 for no limit)
+def wait_for_command(timeout = 0):
+    while True:
+        data = socket_read_string(name_socket, prefix ="",suffix ="", interpret_escape=False, timeout=timeout)
+        if not data == None:
+            return data
+        end
+    end
+end
+
+# Send command to server
+# Returns True or False whether it sent the command. Retry = true will continue trying.
+def send_command(command, retry = False):
+  if not (socket_send_string(command, name_socket)):
+    if retry:
+      sleep(1)
+      return send_command(command, retry)
+    end
+    return False
+  else:
+    return True
+  end
+end
+
+
+connect_to_server()
+
+frames = 0
+while True:
+  frames = frames + 1
+  send_command(frames)
+  textmsg(frames)
+  sleep(4)
+  if(frames >= 15):
+    break
+  end
+end
+halt

@@ -1,0 +1,105 @@
+#test1.0
+
+
+
+startpoint = p[-0.1581,-0.6669,0.4301,-0.0614,3.134,-0.1471]
+table_position_glue = p[-0.2387,-0.7554,0.1856,-0.0157,-3.093,-0.0540]
+
+sizes = [2,0.35, 0.265]
+
+corner_1A = pose_add(table_position_glue, p[sizes[1]-0.025,0,0,0,0,0])        #These must be the coordinates of the second corner
+corner_2A = pose_add(corner_1A, p[0, -sizes[2]+0.025,0,0,0,0])            #These must be the coordinates of the third corner
+corner_3A = pose_add(corner_2A, p[-sizes[1]+0.025,0,0,0,0,0])            #These must be the coordinates of the fourth corner
+corner_4A = pose_add(corner_3A, p[0,sizes[2]-0.025,0,0,0,0])            #These must be the coordinates of the initial corner                                                         #These must be the coordinates of the initial corner
+
+
+#HELLO
+
+def open_gripper():
+    set_digital_out(0, False)
+end
+
+def close_gripper():
+    set_digital_out(0, True)
+end
+
+def glue():
+    set_digital_out(2, True)
+end
+
+def stop_glue():
+    set_digital_out(2, False)
+end
+
+def open_pistons():
+    set_digital_out(1, False)
+end
+
+def close_pistons():
+    set_digital_out(1, True)
+end
+
+
+def get_pose():
+  return get_actual_tcp_pose()
+end
+
+
+def move_up(distance):
+  pos = pose_add(get_pose(), p[0,0,(distance),0,0,0])
+  movel(pos)
+end
+
+close_pistons()
+
+
+
+
+movej(startpoint)
+
+movej(table_position_glue)
+
+glue()
+#wait(the corners must not be glued)            #these three tasks have to be done while moving to the second corner!
+#Stop Glue
+movel(corner_1A, a=1.0, v=0.5)
+stop_glue()
+
+#move_up(0.2)
+#halt
+
+
+corner_1A = pose_add(corner_1A, p[0.025,-0.025,0,0,0,0])
+movel(corner_1A)
+
+#Start Gluing
+glue()
+#wait(the corners must not be glued)            #these three tasks have to be done while moving to the third corner!
+#Stop Glue
+movel(corner_2A, a=1.0, v=0.5)
+stop_glue()
+
+corner_2A = pose_add(corner_2A, p[-0.025,-0.025,0,0,0,0])
+movel(corner_2A)
+
+#Start Gluing 
+glue()
+#wait(the corners must not be glued)            #these three tasks have to be done while moving to the fourth corner!    
+#Stop Glue
+movel(corner_3A, a=1.0, v=0.5)
+stop_glue()
+
+corner_3A = pose_add(corner_3A, p[-0.025,0.025,0,0,0,0])
+movel(corner_3A)
+
+#Start Gluing 
+glue()
+#wait(the corners must not be glued)            #these three tasks have to be done while moving to the initial corner!    
+#Stop Glue
+movel(corner_4A, a=1.0, v=0.5)
+stop_glue()
+
+
+
+
+halt

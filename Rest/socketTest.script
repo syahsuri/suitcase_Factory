@@ -1,0 +1,34 @@
+# Define the IP address and port
+ip = "0.0.0.0"
+port = 10000
+
+# Open a TCP socket connection
+socket_open("socket_id", ip, port)
+
+# Check if the socket connection is open
+if (socket_get_var("socket_id", "open")):
+  while (True):
+    # Read data from the socket (adjust the buffer size as needed)
+    bufferSize = 1024
+    data = socket_read_string("socket_id", bufferSize)
+    
+    # Check if data is received
+    if (data != ""):
+      # Process the received data
+      textmsg("Received data: " + data)
+      break  # Exit the loop when data is received
+    
+  # Close the socket connection when done
+  socket_close("socket_id")
+else:
+  textmsg("Failed to open the socket connection.")
+
+# End of script
+
+
+# Connect to robot socket server in URScript
+socket_open("192.168.0.10", 50001)
+
+# Raise event SocketRequest is your app
+socket_send_string("Hello from robot")
+

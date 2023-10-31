@@ -1,0 +1,811 @@
+#v0.5
+
+# Settings -------------------------------------------------------
+
+glueing = False
+
+# Positions ------------------------------------------------------
+
+start_position = [-1.5759,-1.5830,-1.5629,-3.1500,-0.0021,0.0001]
+inspect_position = [1.5777,-1.5708,-1.5706,-3.1408,-1.5843,1.5720]
+#dispose_position = [0.6788,-1.4450,-1.8544,-1.3990,1.5680,-0.0061] #old
+dispose_position_1 =  [1.8586,-1.7371,-2.0736,-2.8104,-1.3052,1.6607] #new
+dispose_position_2 = [1.7915,-2.0280,-1.8052,-2.9802,-1.3857,1.6771] #new
+
+break_left_position = [0.0037,-1.5831,-1.5628,-3.1502,-0.0021,0.0001]
+break_right_position = [-3.1416,-1.5830,-1.5629,-3.1501,-0.0021,0.0002]
+
+table_position = [-1.5834,-0.9929,-1.9835,-3.5239,-0.0094,0.2043]
+table_hover_position = [-1.4434,-1.4136,-2.2205,-2.5968,0.1410,-0.0546]
+
+A_frame_hover_position = [-2.2566,-2.3029,-0.7633,-3.2016,0.8855,0.0038]
+A_frame_2_hover_position = [-0.5020,-2.2738,-0.9149,-3.1198,-0.5171,0.0269]
+B_frame_hover_position = [-3.0237,-2.0940,-1.0879,-3.0895,-0.6564,0.0189]
+C_frame_hover_position =  [0.0961,-2.1358,-1.0198,-3.1085,-0.6893,0.0240]
+
+
+
+#-----------------------------------------------------------------
+
+# Connection -----------------------------------------------------
+
+server_name = "server"
+server_socket = False
+
+# Returns True or False whether the connection has been made (attempts = 0 for not limit)
+def connect_to_server(attempts = 0):
+    if(is_connected_to_server()):
+      return True
+    end
+  
+    id = "1"
+    port = 10000
+    ip = "192.168.0.5"
+    attempt = 0
+    textmsg("Attempting to connect...")
+    while attempt < attempts or attempts == 0:
+        if server_socket:
+            send_command(id)
+            textmsg("Connected to server")
+            return True
+        end
+        server_socket = socket_open(ip, port, server_name) 
+        attempt = attempt + 1
+        sleep(1)
+    end
+    return False
+end
+  
+  # Returns True or False wether its connected to the server
+def is_connected_to_server():
+    return server_socket
+end
+  
+# Wait for command
+# Returns False if not receiving command after timeout (timeout = 0 for no limit)  
+def wait_for_command(timeout = 0):
+    textmsg("Waiting for a command...")
+    while True:
+        data = socket_read_string(server_name, "", "", False, timeout)
+        if length(data) > 0:
+            textmsg("Command received: ", data)
+            return data
+        end
+    end
+end
+  
+# Returns False if not receiving command after timeout (timeout = 0 for no limit)  
+def wait_for_command_float(number, timeout = 0):
+    textmsg("Waiting for a command...")
+    while True:
+        data = socket_read_ascii_float(number, server_name, timeout)
+        if not data[0] == 0:
+            textmsg("Command received: ", data)
+            return data
+        end
+    end
+end
+
+# Demo command returns the parameter after 1 second 
+def wait_for_demo_command(command):
+    textmsg("Waiting for a command...")
+    sleep(1)
+    textmsg("Command received: ", command)
+    return command
+end
+
+# Send command to server
+# Returns True or False whether it sent the command. Retry = true will continue trying.
+def send_command(command, retry = False):
+    data = socket_send_string(command, server_name)
+    while(retry):
+        if(data == True):
+            return data
+        end
+        data = socket_send_string(command, server_name)
+        sleep(1)
+    end
+    return data
+end
+#---------------------------------------------------------------------
+
+# Processes ----------------------------------------------------------
+
+# Current mode
+mode = "none"
+# modes: shuttingdown, waiting, inspecting, running, disposing
+
+# Get mode
+def get_mode():
+  return mode
+end
+
+# Go to menu
+def go_to_menu():
+    #command = wait_for_demo_command("ready")
+    command = wait_for_command()
+    if command == "shutdown":
+        mode = "shuttingdown"
+        shutdown_process()
+        return 1
+    elif command == "back":
+        mode = "waiting"
+        back_process()
+        return 3
+    elif command == "ready":
+        mode = "waiting"
+        ready_process()
+        return 4
+    elif command == "inspect":
+        mode = "inspecting"
+        inspect_process()
+        return 5
+    elif command == "dispose":
+        mode = "disposing"
+        dispose_process()
+        return 6
+    else:
+        mode = "none"
+        return 0
+    end
+end
+
+# Start the process
+def ready_process():
+    movej(start_position)
+
+    start_command = wait_for_command()
+    textmsg("1")
+    #start_command = wait_for_demo_command("stop")
+    if not (start_command == "start"):
+        textmsg("Aborted, going back to menu")
+        return 0
+    end
+
+    #frame_command = wait_for_demo_command([3,7,1,1])
+    frame_command = wait_for_command_float(3, timeout = 0)
+    if not length(frame_command) == 4:
+        textmsg("Incorrect format received: ", frame_command)
+        return 0
+    end
+
+    handle_frames(frame_command[1], frame_command[2], frame_command[3])
+
+    # Reset
+    movej(start_position)
+end
+
+# Back the process
+def back_process():
+  movej(start_position)
+end
+
+# Shutdown the process
+def shutdown_process():
+    movej(start_position)
+    halt
+end
+
+# Start the inspection
+def inspect_process():
+    movej(inspect_position)
+end
+
+# Start disposing
+def dispose_process():
+    movej(inspect_position)
+    movej(dispose_position_1)
+    start_glueing()
+    sleep(1.5)
+    stop_glueing()
+    movel(dispose_position_2)
+    move_up(0.075)
+    movej(inspect_position)
+end
+
+#-----------------------------------------------------------------------
+
+# Movement -------------------------------------------------------------
+
+def get_pose():
+  return get_actual_tcp_pose()
+end
+
+def get_joints():
+    return get_actual_joint_positions()
+end
+
+def move(distance, direction):
+    if(direction == "front"):
+        move_front(distance)
+    elif(direction == "back"):
+        move_back(distance)
+    elif(direction == "left"):
+        move_left(distance)
+    elif(direction == "right"):
+        move_right(distance)
+    end
+end
+
+def move_up(distance):
+  pos = pose_add(get_pose(), p[0,0,distance,0,0,0])
+  movel(pos)
+end
+  
+def move_down(distance):
+  pos = pose_add(get_pose(), p[0,0,-distance,0,0,0])
+  movel(pos)
+end
+
+def move_right(distance):
+  pos = pose_add(get_pose(), p[-distance,0,0,0,0,0])
+  movel(pos)
+end
+ 
+def move_left(distance):
+  pos = pose_add(get_pose(), p[distance,0,0,0,0,0])
+  movel(pos)
+end
+
+def move_front(distance):
+  pos = pose_add(get_pose(), p[0,-distance,0,0,0,0])
+  movel(pos)
+end
+  
+def move_back(distance):
+  pos = pose_add(get_pose(), p[0,distance,0,0,0,0])
+  movel(pos)
+end
+
+def move_front_left(front_distance, left_distance):
+    pos = pose_add(get_pose(), p[left_distance,-front_distance,0,0,0,0])
+    movel(pos)
+end
+
+def move_front_right(front_distance, right_distance):
+    pos = pose_add(get_pose(), p[-right_distance,-front_distance,0,0,0,0])
+    movel(pos)
+end
+
+def move_back_left(back_distance, left_distance):
+    pos = pose_add(get_pose(), p[left_distance,back_distance,0,0,0,0])
+    movel(pos)
+end
+
+def move_back_right(back_distance, right_distance):
+    pos = pose_add(get_pose(), p[-right_distance,back_distance,0,0,0,0])
+    movel(pos)
+end
+
+def get_hover_position(type, drop_off = False):
+    if(type == "A"):
+        if(drop_off):
+            return A_frame_2_hover_position
+        else:
+            return A_frame_hover_position
+        end
+    elif(type == "B"):
+        return B_frame_hover_position
+    elif(type == "C"):
+        return C_frame_hover_position
+    end
+    halt
+end
+
+def get_break_position(type, drop_off = False):
+    if(type == "A"):
+        if(drop_off):
+            return break_left_position
+        else:
+            return break_right_position
+        end
+    elif(type == "B"):
+        return break_right_position
+    elif(type == "C"):
+        return break_left_position
+    end
+    halt
+end
+
+def rotate():
+    pos = pose_add(get_pose(), p[0,-0.04,0,0,0,0])
+    movel(pos)
+end
+
+def rotate_normal():
+    pos = pose_add(get_pose(), p[0,-0.04,0,0,0,0])
+    movel(pos)
+end
+
+#-----------------------------------------------------------------------
+
+# Pneumatic output -----------------------------------------------------
+
+def open_gripper():
+    set_digital_out(0, False)
+end
+
+def close_gripper():
+    set_digital_out(0, True)
+end
+
+def open_pistons():
+    set_digital_out(1, False)
+end
+
+def close_pistons():
+    set_digital_out(1, True)
+end
+
+def start_glueing():
+    if(not glueing):
+        open_gripper()
+    else:
+        set_digital_out(2, True)
+    end
+end
+
+def stop_glueing():
+    if(not glueing):
+        close_gripper()
+    else:
+        set_digital_out(2, False)
+    end
+end
+
+#-----------------------------------------------------------------------
+
+# Handling -------------------------------------------------------------
+
+# Handle frames
+def handle_frames(A_frames, B_frames, C_frames):
+
+    # Handle A frames
+    index = 0
+    if(A_frames > 10): # Max frames 10
+      A_frames = 10
+    end
+
+    A_distance = 0.02825
+    while (index < A_frames):
+        multiplier = 10 - A_frames + index
+        distance = 0.1 + multiplier * (A_distance)
+        handle_frame(type="A", distance=distance)
+        index = index + 1
+    end
+    
+    # Handle B frames
+    index = 0
+    if(B_frames > 10): # TODO: Set better Max frames
+      B_frames = 10
+    end
+
+    B_distance = 0.0665
+    while (index < B_frames):
+        # TODO: Add some math to calculate distance to next frame
+        distance = -B_distance + (index+1)*B_distance
+        handle_frame(type="B", distance=distance)
+        index = index + 1
+    end
+
+    # Handle C frames
+    index = 0
+    if(C_frames > 11): # TODO: Set better Max frames
+      C_frames = 11
+    end
+
+    C_distance = 0.0665
+    while (index < C_frames):
+        # TODO: Add some math to calculate distance to next frame
+        distance = -C_distance + (index+1)*C_distance
+        handle_frame(type="C", distance=distance)
+        index = index + 1
+    end
+
+end
+
+# Handle frame
+def handle_frame(type, distance):
+    # Pick up frames from stack
+    pick_up_frame(type, distance)
+
+    # Bring the frame to the glueing table
+    bring_to_table(type)
+
+    # Break away for the camera
+    movej(break_left_position)
+
+    # Avoid shaking of camera
+    sleep(1)
+
+    # Handling camera data
+    send_command("[2]start")
+    size = wait_for_command_float(2, timeout = 0)              #CHANGE!
+    #size = wait_for_demo_command([2, 0.493, 0.363])
+    send_command("[2]stop")
+
+    # Glueing frame
+    glue_frame(type, size[1], size[2])                         #CHANGE!
+
+    # Taking frame from glueing table
+    take_from_table(type)
+
+    # Dropping frame off at drop off
+    drop_off_frame(type, distance)
+
+    send_command("[3]frame completed")
+end
+
+# Pick frame up from rack
+def pick_up_frame(type, distance):
+    movej(get_break_position(type))
+    movej(get_hover_position(type))
+
+    if(type == "A"):
+        open_gripper()
+        move_down(distance)
+        close_gripper()
+        sleep(0.5)
+        move_up(distance)
+    elif(type == "B"):
+        # TODO: Adjust these motions to perform pickup
+        open_gripper()
+        move_back(distance)
+        move_down(0.352)
+        close_gripper()
+        sleep(0.5)
+        move_up(0.352)
+    elif(type == "C"):
+        # TODO: Adjust these motions to perform pickup
+        open_gripper()
+        move_back(distance)
+        move_down(0.343)
+        close_gripper()
+        sleep(0.5)
+        move_up(0.343)
+    end
+
+    movej(get_break_position(type))
+end
+
+# Take frame to table
+def bring_to_table(type):
+    movej(table_position)
+
+    if(type == "A"):
+        movej(table_hover_position)
+        move_back(0.0025)
+        move_right(0.0025)
+    elif(type == "B"):
+        # TODO: Adjust these motions to perform dropoff to table due to edges of B frames
+        
+        #move_right(0.052)
+        #move_back(0.015)
+
+        pos = [-1.5461,-1.3839,-2.2147,-2.4823,0.0391,-0.2022]
+        movej(pos)
+        move_back(0.001)
+
+    elif(type == "C"):
+        # TODO: Adjust these motions to perform dropoff to table due to edges of C frames
+
+        pos = [-1.5461,-1.3839,-2.2147,-2.4823,0.0391,-0.2022]
+        movej(pos)
+        move_back(0.001)
+       
+    end
+
+
+    open_pistons()
+    if(type == "A" or type == "C"):   
+        move_down(0.2)
+    else:
+      move_down(0.208)
+    end
+    open_gripper()
+    sleep(0.5)
+    move_up(0.2)
+    close_pistons()
+end
+
+# Pick up from table
+def take_from_table(type):
+
+    open_gripper()
+    open_pistons()
+
+    if(type == "A"):
+        # TODO: Not required to adjust movement for picking frames from glueing table
+        movej(table_hover_position)
+        #move_left(0.0025)
+        #move_front(0.0025)
+        move_down(0.2)
+    elif(type == "B"):
+        # TODO: Required to adjust movement for picking frames from glueing table due to edges of B frames
+        #move_right(0.052)
+        #move_back(0.015)
+
+        pos = [-1.5461,-1.3839,-2.2147,-2.4823,0.0391,-0.2022]
+        movej(pos)
+        move_back_left(0.005,0.003)
+        move_down(0.21)
+    elif(type == "C"):
+        # TODO: Required to adjust movement for picking frames from glueing table due to edges of C frames
+        pos = [-1.5461,-1.3839,-2.2147,-2.4823,0.0391,-0.2022]
+        movej(pos)
+        move_back(0.0025)
+        move_down(0.2)
+        
+
+    end
+
+
+
+      
+    sleep(0.5)
+    close_gripper()
+    sleep(1)
+    
+    if(type == "C" or type == "B"):
+        move_back_right(0.001,0.001)
+    end
+
+    move_up(0.2)
+    movej(table_position)
+end
+
+# Drop off at zone
+def drop_off_frame(type, distance):
+    movej(get_break_position(type, drop_off = True))
+    movej(get_hover_position(type, drop_off = True))
+
+    if(type == "A"):
+        open_gripper()
+        sleep(0.5)
+    elif(type == "B"):
+        # TODO: Adjust movements and motion to drop frames in correct location, you can save the location the robot is at when it picksup, then apply the location here as its the exact same spot, same for C
+        move_back(distance)
+        move_down(0.33)
+        open_gripper()
+        move_up(0.33)
+        sleep(0.5)
+    elif(type == "C"):
+        # TODO: Adjust movements and motion to drop frames in correct location
+        move_back(distance)
+        move_down(0.33)
+        open_gripper()
+        move_up(0.33)
+        sleep(0.5)
+    end
+
+    movej(get_break_position(type, drop_off = True))
+end
+#-----------------------------------------------------------------------
+
+
+#Glueing ---------------------------------------------------------------
+
+def glue_frame(type, width, length):
+    height = 0.01
+    if(type == "A"):
+        #TODO: Remove JICS to outside so the gluegun/nozzle cant hit them. Adjust the movements and instead of going for example:
+        # move_left, move_up, move_front, move_left, move_down, change it to: move_up, move_front_left, move_down, by using the new move_back_left, move_back_right, move_front_left, move_front_right functions
+        
+        hover_glue_position = [-2.1252,-1.4658,-2.1314,-1.1122,1.5626,-0.0685]
+        hover_glue_position_2 = {currentj}
+        movej(hover_glue_position)
+        move_down(0.2)
+        width = width - 0.05
+        length = length - 0.05
+
+        draw_line(distance = width, direction = "left", delay = 1.0, not_length = 0.05, dip = type)
+        move_up(height)
+        move_front_left(0.016, 0.0195)
+        move_down(height)
+
+        draw_line(distance = length, direction = "front", delay = 1.0, not_length = 0.05, dip = type)
+        move_up(height)
+        move_front_right(0.023, 0.021)
+        move_down(height)
+    
+        draw_line(distance = width, direction = "right", delay = 1.0, not_length = 0.05, dip = type)
+        move_up(height)
+        move_back_right(0.019, 0.015)
+        move_down(height)
+
+        draw_line(distance = length, direction = "back", delay = 1.0, not_length = 0.05, dip = type)
+        halt
+        move_up(height)
+        move_left(0.010)
+
+    elif(type == "B"):
+        #TODO: Create motion to glue B frames
+        
+        width = width - (0.075)
+        length = length - (0.075 + 0.025)
+
+        hover_glue_position = [-1.7920,-1.9059,-1.6509,-2.4185,1.3593,1.4853]
+        hover_glue_position_2 = [-1.4523,-1.4093,-2.3316,-1.3677,0.3241,0.3922]
+
+        movej(hover_glue_position)
+        move_down(0.2)
+
+        move_back(0.05)
+        draw_line(distance = width, direction = "left", delay = 1.0, not_length = 0.08, dip = type)
+
+        move_up(0.10)
+        movej(hover_glue_position_2)
+        move_down(0.2)
+        move_right(0.05)
+
+        draw_line(distance = length, direction = "front", delay = 1.0, not_length = 0.05, dip = type)
+
+        move_up(0.2)
+
+        hover_glue_position = [-2.1252,-1.4658,-2.1314,-1.1122,1.5626,-0.0685]
+        movej(hover_glue_position)
+        move_down(0.2)
+        width = width - 0.05
+        length = length - 0.05
+
+        draw_line(distance = width, direction = "left", delay = 1.0, not_length = 0.05, dip = type)
+        move_up(height)
+
+        
+        hover_glue_position_2 = []
+        movej(hover_glue_position_2)
+        draw_line(distance = width, direction = "front", delay = 1.0, not_length = 0.05, dip = type)
+        move_up(height)
+
+    elif(type == "C"):
+        #TODO: Create motion to glue C frames
+        width = width - (0.075)
+        length = length - (0.075 + 0.025)
+
+        hover_glue_position = [-1.7920,-1.9059,-1.6509,-2.4185,1.3593,1.4853]
+        hover_glue_position_2 = [-1.4523,-1.4093,-2.3316,-1.3677,0.3241,0.3922]
+
+        movej(hover_glue_position)
+        move_down(0.2)
+
+        move_back(0.05)
+        draw_line(distance = width, direction = "left", delay = 1.0, not_length = 0.08, dip = type)
+
+        move_up(0.10)
+        movej(hover_glue_position_2)
+        move_down(0.2)
+        move_right(0.05)
+
+        draw_line(distance = length, direction = "front", delay = 1.0, not_length = 0.05, dip = type)
+    end
+    move_up(0.2)
+end
+
+def draw_line(distance, direction, delay = 0, not_length = 0, dip = ""):
+    global plane = 0
+    global stop_point = get_pose()
+    rico = 0.002 / 0.75
+    height_fix = rico * distance
+    if(dip == "A"):
+        distance = distance - 0.015
+    end
+    if(direction == "front"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,-distance,height_fix,0,0,0])
+    elif(direction == "back"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,distance,-height_fix,0,0,0])
+    elif(direction == "left"):
+      stop_point = pose_add(get_pose(), p[distance,0,0,0,0,0])
+    elif(direction == "right"):
+      stop_point = pose_add(get_pose(), p[-distance,0,0,0,0,0])
+    end
+    global goal = stop_point[plane]
+  
+    def abs(value):
+      if(value < 0):
+        return value * -1
+      end
+      return value
+    end
+  
+    def get_delta_pose():
+      pose = get_pose()
+      return (pose[plane])
+    end
+  
+    def is_near_not_length(not_length):
+      current = get_delta_pose()
+      delta = abs(current - goal)
+      if(delta <= (not_length)):
+        return True
+      end
+      return False
+    end
+
+    thread move_thread():
+        # Settings -------------------------------------------------------
+        glue_velocity = 0.25 * 0.5
+        glue_acceleration = 1.2
+        #-----------------------------------------------------------------
+        movel(stop_point, glue_acceleration, glue_velocity)
+    end
+    
+    start_glueing()
+    sleep(delay)
+    thrd = run move_thread()
+    while (True and not not_length == 0):
+      if is_near_not_length(not_length):
+        break
+      end
+      sleep(0.01)
+    end
+    stop_glueing()
+    join thrd
+    if(dip == "A"):
+        move_down(0.002)
+        move(0.015, direction)
+        move_up(0.002)
+    elif(dip == "C"):
+        if(direction == "left"):
+            move_back(0.002)
+            move_left(0.05)
+        elif(direction == "front"):
+            move_right(0.002)
+            move_left(0.005) # Questionable TODO
+        end
+    end
+  end
+#-----------------------------------------------------------------------
+
+# Code -----------------------------------------------------------------
+
+# DEBUG ----------------------------------------------------------------
+# You can debug here, just set debug to "True"
+
+debug = False
+
+if(debug): 
+    hover_glue_position = [-1.7920,-1.9059,-1.6509,-2.4185,1.3593,1.4853]
+    movej(hover_glue_position)
+    halt
+    connection = connect_to_server(attempts = 0)
+    if(connection == False):
+        textmsg("No connection")
+        halt
+    end
+
+    movej(break_left_position)
+    while(True):
+        # Handling camera data
+        send_command("[2]start")
+        size = wait_for_command_float(2, timeout = 0)
+        send_command("[2]stop")
+        sleep(2)
+    end
+    #movej(table_position)
+    #glue_frame("C", size[1], size[2])
+    halt
+end
+
+#-----------------------------------------------------------------------
+
+# Connect to server
+connection = connect_to_server(attempts = 0)
+if(connection == False):
+    textmsg("No connection")
+    halt
+end
+
+# Go to menu
+def main():
+    selection = go_to_menu()
+    if(selection == 0):
+        textmsg("Unknown command received")
+    end
+    main()
+end
+
+main()
+#------------------------------------------------------------------------
+# Version: 27-10-2023 14:03

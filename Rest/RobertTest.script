@@ -1,0 +1,229 @@
+#Here we can paste small parts of the code and test them
+
+# Coordinates -----------------------------------------------------------
+
+pick = p[-0.7806,-0.6525,0.3239,0.6542,1.823,1.7790]
+
+start_point = p[0.1836,-0.4205,0.3943,-0.1958,2.753,-1.4833]              #Starting Position
+
+camera_position = p[0.7236,0.1235,0.6232,2.3344,-2.054,0.0693]          #Out of view for camera
+table_position = p[0.1278,-0.6689,0.3378,-0.0511,3.132,0.0736]           #Position of the table
+
+safe_point_pickup = p[-0.6938,-0.1693,0.6356,-2.0395,-2.269,-0.0587]       #(Safe)position of the pickup
+safe_point_dropoff = p[0.7236,0.1235,0.6232,2.3344,-2.054,0.0693]      #(Safe)position of the dropoff
+
+pickup_point_A = p[-1.0514,-0.6335,0.2917,-1.5978,-2.681,0.1330]            #Position of box number 1
+pickup_point_B = p[-1.1881,-0.0710,0.2258,-2.1807,-2.222,-0.1436]            #Position of box number 2
+pickup_point_C = p[-1.0027,0.6957,0.2022,-2.7426,-1.362,-0.0961]
+
+dropoff_position_A = p[1.0371,-0.6233,0.2170,-1.4317,2.680,-0.2905]        #Position of the drop off zone
+dropoff_position_B =p[1.2203,0.1211,0.2131,-2.2689,2.152,-0.0066]       #Position of the drop off zone
+dropoff_position_C = p[1.0481,0.6426,0.3595,-2.6914,1.589,-0.0024]        #Position of the drop off zone
+
+# Functions ------------------------------------------------------------
+
+def getPose():
+  return get_actual_tcp_pose()
+end
+
+def resetPosition():
+  # Resetting robot
+  movel(start_point)
+end
+
+def moveToStart():
+  # Move to Start Position
+  movej(start_point)
+end
+
+def moveToPickUpZone(zone):
+  # Enter Safezone before continueing
+  movej(safe_point_pickup)
+  movePos = start_point
+  if (zone == "A"):
+    movePos = pickup_point_A
+  elif (zone == "B"):
+    movePos = pickup_point_B
+  elif (zone == "C"):
+    movePos = pickup_point_C
+  end
+  movej(movePos)
+  return movePos
+end
+
+def moveToDropOffZone(zone):
+  # Enter Safezone before continueing
+  movej(safe_point_dropoff)
+  movePos = start_point
+  if (zone == "A"):
+    movePos = dropoff_position_A
+  elif (zone == "B"):
+    movePos = dropoff_position_B
+  elif (zone == "C"):
+    movePos = dropoff_position_C
+  end
+  movej(movePos)
+  return movePos
+end
+
+def moveToTable(from = "none"):
+  # Move to table
+  if(from == "pickup"):
+    movej(safe_point_pickup)
+    movej(table_position)
+  elif (from == "dropoff"):
+    movej(safe_point_dropoff)
+    movej(table_position)
+  elif (from == "none"):
+    movej(table_position)
+  end
+  return table_position
+end
+
+def moveDown(position, distance):
+  # Move down a certain distance from point
+  movePos = pose_add(position, p[0,0,-(distance),0,0,0])
+  movel(movePos)
+  return movePos
+end
+
+def moveUp(position, distance):
+  # Move down a certain distance from point
+  movePos = pose_add(position, p[0,0,(distance),0,0,0])
+  movel(movePos)
+  return movePos
+end
+
+def glue_frame(type):
+    if(type == "A" or type == "B" or type == "C"):
+      corner_1 =  p[0.2132,-0.4837,0.0600,1.6505,-2.324,-1.2664]
+      corner_2 =   p[0.1925,-0.9229,0.0887,1.4719,-2.499,-0.7499]
+      corner_3 =  p[-0.1634,-0.9092,0.0940,0.9986,-2.820,-0.8192]
+      corner_4 =  p[-0.1210,-0.4577,0.0638,1.0213,-2.379,-1.4942]
+
+      # Taking position
+      #movel(some_new_position)
+
+      # Corner movement
+      movel(corner_1)
+      sleep(0.1)
+      movel(corner_2)
+      sleep(0.1)
+      movel(corner_3)
+      sleep(0.1)
+      movel(corner_1)
+      sleep(0.1)
+      movel(corner_4)
+      sleep(0.1)
+      movel(corner_3)
+    end
+end
+
+def handle_frame(type):
+  # Move to pickup zone (A, B or C)
+  movePos = moveToPickUpZone(type)
+  movej(pick)                     #TESTTTT
+  movePos = pick
+  sleep(0.1)
+
+  # Move down  
+  newPos = moveDown(movePos, 0.05)
+  sleep(1)
+
+  # Move up
+  moveUp(newPos, 0.20)
+  sleep(0.1)
+
+  # Move to Glue Table from Pickup zone
+  movePos = moveToTable(from = "pickup")
+  sleep(0.1)
+
+  # Move down
+  newPos = moveDown(movePos, 0.10)
+  sleep(1)
+
+  # Move up
+  moveUp(newPos, 0.10)
+  sleep(0.1)
+
+  # Move out of camera sight
+  movej(camera_position)
+  sleep(3)
+
+  # Move back to Glue Table
+  moveToTable()
+  sleep(0.1)
+
+  # Glue frame (A, B or C)
+  #glue_frame(type)
+  sleep(1)
+
+  # Move at to Glue Table
+  movePos = moveToTable()
+  sleep(0.1)
+
+  # Move down
+  newPos = moveDown(movePos, 0.10)
+  sleep(1)
+
+  # Move up
+  moveUp(newPos, 0.10)
+  sleep(0.1)
+
+  # Move to dropoff zone (A, B or C)
+  movePos = moveToDropOffZone(type)
+  sleep(0.1)
+
+  # Move down
+  newPos = moveDown(movePos, 0.20)
+  sleep(1)
+
+  # Move up
+  moveUp(newPos, 0.20)
+  sleep(0.1)
+
+  # Move to Glue Table from Pickup zone
+  moveToTable(from = "dropoff")
+  sleep(0.1)
+end
+
+index = 0
+def loop(type, count):
+  index = index + 1
+  if(index <= count):
+    handle_frame(type)
+    loop(type, count)
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+# Start script ------------------------------------------------------------
+
+# Set payload mass
+set_payload_mass(2.5) #2.5 kG
+
+# Move to reset position
+moveToStart()
+sleep(2)
+
+# Loop frame A 2 times
+loop(type = "A", count = 1)
+loop(type = "B", count = 1)
+loop(type = "C", count = 1)
+
+# Stop script ------------------------------------------------------------
+
+sleep(1)
+resetPosition()
+
+# End script -------------------------------------------------------------
+halt

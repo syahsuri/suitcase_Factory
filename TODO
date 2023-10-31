@@ -1,0 +1,37 @@
+#There needs to be a emergency stop, reset and pause function that runs async with the main code.
+#Emergency stop: Stop the entire program script, and power?
+#Reset: Send robot safely to #1 startposition.
+#Pause: Pause the script and allow it to continue from exactly there after unpause.
+
+#0. Enable the Robot Script
+#1. Move the robot to a startposition (Backwards)
+
+#2. Employee selects amount on interface (use default values for now)
+
+#3. Employee pushes button (This starts the routine)
+
+#4. Robot moves to pickup zone (A, B, or C)
+
+#5. Pick up frame (from first fixed point, then move with a loop to the next x amount)
+
+#6. Move to working zone (The glueing area)
+
+#7.a Drop the frame in the right position (where the piston clamps will hold it down, dont let go yet)
+
+#7.b The piston clamps will hold it down
+
+#7.c The robot arm can let go and move up.
+
+#8. Move out of frame (Away for the camera for it to scan properly)
+
+#8. Glue (Convert and Follow the instructions from the Congex. Cognex should send positions for each corners)
+#Convert positions to lines.
+
+#9. Pick up (Pickup once instructions have arrived from Cognex)
+
+#10. Move the frame to the drop-off zone (A, B or C)
+
+#11. Drop it into that zone (from first fixed point, then move with a loop to the next x amount)
+
+#12. If out of frames: Move to starting pos and STOP (Notify employee?)
+#12. If not out of frames: Move to #4

@@ -1,0 +1,118 @@
+# Continues glue line
+def get_pose():
+    return get_actual_tcp_pose()
+  end
+
+  def move_up(distance):
+    pos = pose_add(get_pose(), p[0,0,distance,0,0,0])
+    movel(pos)
+  end
+  
+  def move_down(distance):
+    pos = pose_add(get_pose(), p[0,0,-distance,0,0,0])
+    movel(pos)
+  end
+
+  def move_right(distance):
+    pos = pose_add(get_pose(), p[-distance,0,0,0,0,0])
+    movel(pos)
+  end
+  
+  def move_left(distance):
+    pos = pose_add(get_pose(), p[distance,0,0,0,0,0])
+    movel(pos)
+  end
+
+  def move_front(distance):
+    pos = pose_add(get_pose(), p[0,-distance,0,0,0,0])
+    movel(pos)
+  end
+  
+  def move_back(distance):
+    pos = pose_add(get_pose(), p[0,distance,0,0,0,0])
+    movel(pos)
+  end
+  
+  def start_glueing():
+    #set_digital_out(2, True)
+  end
+  
+  def stop_glueing():
+    #set_digital_out(2, False)
+  end
+  
+  def draw_line(length, direction, delay = 0, not_length = 0):
+    global plane = 0
+    global stop_point = get_pose()
+    if(direction == "front"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,-length,0,0,0,0])
+    elif(direction == "back"):
+      plane = 1
+      stop_point = pose_add(get_pose(), p[0,length,0,0,0,0])
+    elif(direction == "left"):
+      stop_point = pose_add(get_pose(), p[length,0,0,0,0,0])
+    elif(direction == "right"):
+      stop_point = pose_add(get_pose(), p[-length,0,0,0,0,0])
+    end
+    global goal = stop_point[plane]
+  
+    def abs(value):
+      if(value < 0):
+        return value * -1
+      end
+      return value
+    end
+  
+    def get_delta_pose():
+      pose = get_pose()
+      return (pose[plane])
+    end
+  
+    def is_near_not_length(not_length):
+      current = get_delta_pose()
+      delta = abs(current - goal)
+      if(delta <= (not_length)):
+        return True
+      end
+      return False
+    end
+  
+    thread move_thread():
+      movel(stop_point)
+    end
+  
+    start_glueing()
+    sleep(delay)
+    thrd = run move_thread()
+    while (True and not not_length == 0):
+      if is_near_not_length(not_length):
+        break
+      end
+      sleep(0.01)
+    end
+    stop_glueing()
+    join thrd
+  end
+  
+#ONLY WORKS FOR SQUARE FRAMES OF FIXED SIZE
+startpoint = p[-0.1255,-0.2601,0.4638,0.0870,2.168,2.0844]
+table_position_glue = p[-0.3706,-0.3470,0.1909,2.2020,2.225,-0.0089]
+
+def glue_square(width, length):
+    movej(start_point)
+    movej(table_position_glue)
+
+    draw_line(length = width, direction = "left", delay = 1, not_length = 0.05)
+    move_up(0.015)
+    #move_front(0.015)
+    #move_left(0.015)
+    #move_down(0.015)
+
+    #draw_line(length = length, direction = "front", delay = 1, not_length = 0.05)
+
+end
+
+glue_square(0.460, 0.335)
+
+halt

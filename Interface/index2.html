@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+      .card-footer {
+        background-color: #f0f0f0; /* Set your desired background color */
+        border: 2px solid #000; /* Border with a thickness of 2px and a color of #000 (black) */
+        border-radius: 5px; /* Adjust the radius to your preference */
+        padding: 10px; /* Add padding to give it some space inside */
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+    }
+</style>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just In Case</title>
+  <link rel="stylesheet" href="style2.css" />
+  <!-- Include SweetAlert2 CSS and JS -->  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+  <!-- Include necessary libraries and CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+  <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card text-center" style="padding: 20px; background-color: rgba(249, 246, 246, 0.3);">
+                <div class="d-flex flex-column align-items-center">
+                  <button class="btn btn-success btn-lg my-3" id="continueButton" style="width: 300px; font-size: 40px;"><i class="fa-solid fa-power-off"></i> Continue</button>
+                  <button class="btn btn-primary btn-lg my-3" id="inspectButton" style="width: 300px; font-size: 40px;" onclick="inspectButton()"><i class="fa-solid fa-vial-virus"></i> Inspection</button>
+                  <button class="btn btn-danger btn-lg my-3" id="stopButton" style="width: 300px; font-size: 40px;" onclick="exitButton()"><i class="fa-solid fa-stop"></i>  Exit</button>
+                </div>
+            </div>
+        </div>
+      
+        <div class="col-md-6">
+          <div class="card text-center" style="padding: 20px; background-color: rgba(249, 246, 246, 0.3); margin-left: 50px; width: 400px;">
+              <div class="d-flex flex-column align-items-center">
+                  <textarea class="form-control" rows="4" style="width: 200%; height: 300px; margin-top: -50px;" id="messageLog" placeholder="Console Log : ">Console Log :</textarea>
+              </div>
+              <div class="card-footer" style="margin-top: 10px; display: flex; justify-content: space-between; width: 100%;">
+                  <div class="text-primary" id="statusRobot">Robot: Disconnected</div>
+                  <div class="text-primary" id="statusCamera">Camera: Disconnected</div>
+                  <div class="text-primary" id="statusServer">Server: Disconnected</div>
+              </div>
+              
+              <div class="card-footer" style="margin-top: 10px; display: block; justify-content: space-between;">
+                  <div class="text-primary" id="programState">Not Connected</div>
+                  <div class="text-primary" id="Robotmode">Not Connected</div>
+                  <div class="text-primary" id="Safetystatus">Not Connected</div>
+              </div>
+          </div>
+      </div>
+      
+    </div>
+</div>
+
+  
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script src="script2.js"></script>
+
+  <script src="https://kit.fontawesome.com/0735ededae.js" crossorigin="anonymous"></script>
+</body>
+</html>

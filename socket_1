@@ -1,0 +1,28 @@
+# Define the IP address and port
+var ip = "192.168.0.10"
+var port = 10000
+
+# Open a TCP socket connection
+socket_open("socket_id", ip, port)
+
+# Check if the socket connection is open
+if (socket_get_var("socket_id", "open")):
+    while (True):
+        # Read data from the socket (adjust the buffer size as needed)
+        var bufferSize = 1024
+        var data = socket_read_string("socket_id", bufferSize)
+
+        # Check if data is received
+        if (data != ""):
+            # Display a message on the teach pendant
+            textmsg("Message from JavaScript: " + data)
+
+            # Uncomment the line below to exit the loop when data is received
+            # break
+
+    # Close the socket connection when done
+    socket_close("socket_id")
+else:
+    textmsg("Failed to open the socket connection.")
+
+# End of script

@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./OpenCV/FrameRecognision v0.1/src",
+        "./OpenCV/FrameRecognision/src",
+        "./OpenCV/JICRecognision/jics"
+    ]
+}
