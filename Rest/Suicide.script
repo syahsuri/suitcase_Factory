@@ -1,9 +1,0 @@
-buttonLoc = p[-0.3136,-0.0484,0.0659,0.5320,1.515,0.4808]
-buttonHover = p[-0.3107,-0.0497,0.3171,0.4970,1.461,0.4785]
-
-sleep(5)
-movej(buttonHover)
-sleep(1)
-movej(buttonLoc, a=1.4, v=0.3)
-
-halt
