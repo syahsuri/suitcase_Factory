@@ -1,0 +1,14 @@
+For the Positions.txt
+    Select the required value. Note that selection may dissapear at a given moment.
+    Pose and Joints update every 5 seconds.
+
+For auto replacements
+    Type ${currentp} in your script file to get it automaticly replaced with the current pose.
+    Type ${currentj} in your script file to get it automaticly replaced with the current joint.
+
+    Wait for +-5 seconds for it to update.
+    
+    Example:
+
+        HomePosition = ${currentp}
+        movej(HomePosition)
